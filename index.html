@@ -135,6 +135,16 @@
     <div id="home-view">
         <div class="notice-bar" id="notice">欢迎使用本站高校查询系统！还可领取一分一段表+全国大学宿舍详情表，本链接或许会失效，可转发到朋友圈，发给好友保存</div>
         <h2 style="text-align:center;">🏫 全国大学真实生活环境查询</h2>
+        <!-- 数据验证统计横幅 -->
+        <div id="data-stats-banner" style="display:none;background:linear-gradient(135deg,#f6ffed,#e6fffb);border:1px solid #b7eb8f;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#333;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="background:#52c41a;color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;">📊 数据透明</span>
+                <span>已收录 <strong id="stat-total" style="color:#007bff;">-</strong> 所高校</span>
+                <span style="color:#52c41a;">✅ <strong id="stat-verified">-</strong> 所已验证</span>
+                <span style="color:#faad14;">⚠️ <strong id="stat-template">-</strong> 所模板参考</span>
+                <span style="color:#999;font-size:11px;">来源：软科2024、头条公开数据、在校生反馈</span>
+            </div>
+        </div>
         <div class="search-mode-tabs">
             <div id="tab-school" class="s-tab active" onclick="switchSearchMode('school')">🏫 搜大学</div>
             <div id="tab-q" class="s-tab s-tab-q" onclick="switchSearchMode('q')">💡 搜条件 (如: 空调)</div>
@@ -297,6 +307,17 @@
             ]);
             localData = dataRes;
             allSchools = schoolsRes;
+
+            // 更新数据统计横幅
+            let vCount = 0, tCount = 0;
+            for(const d of Object.values(localData)) {
+                if(d._verified) vCount++;
+                else tCount++;
+            }
+            document.getElementById('stat-total').textContent = Object.keys(localData).length;
+            document.getElementById('stat-verified').textContent = vCount;
+            document.getElementById('stat-template').textContent = tCount;
+            document.getElementById('data-stats-banner').style.display = 'block';
         } catch(e) {
             console.error('加载数据文件失败:', e);
             document.getElementById('hot-tags').innerHTML = '<span style="color:red;font-size:12px;">数据加载失败，请刷新重试</span>';
@@ -409,14 +430,23 @@
         if (searchMode === 'school') {
             t.innerHTML = searchDataCache.map(s => {
                 const inPk = compareList.includes(s.school_name);
+                const schoolData = localData[s.school_name];
+                const isV = schoolData && schoolData._verified;
+                const isM = schoolData && schoolData._multiSource;
+                const verBadge = isM ? '<span style="background:#52c41a;color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;margin-left:4px;">✓验证</span>' : (isV ? '<span style="background:#1890ff;color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;margin-left:4px;">📋</span>' : '');
                 return `<div class="tag" style="background:#e6f7ff; border-color:#91d5ff;">
-                            <span class="tag-name" style="color:#007bff;" onclick="getDetail('${s.school_name}')">${s.school_name}</span>
+                            <span class="tag-name" style="color:#007bff;" onclick="getDetail('${s.school_name}')">${s.school_name}${verBadge}</span>
                             <span class="tag-pk-btn ${inPk ? 'in-pk' : ''}" onclick="togglePk('${s.school_name}', event)">${inPk ? '\u2715' : 'VS'}</span>
                         </div>`;
             }).join('');
         } else {
             t.innerHTML = `<div style="font-size:12px; color:#ff4d4f; margin-bottom:10px; font-weight:bold;">🔍 为您跨库检索到以下高校情况：</div>` +
-            searchDataCache.map(s => `<div class="q-card" onclick="getDetail('${s.school_name}')"><div class="q-card-title">🏫 ${s.school_name}</div><div class="q-card-desc"><b>命中问题：</b>${s.q}<br><span style="color:#888;">${s.a}</span></div></div>`).join('');
+            searchDataCache.map(s => {
+                const schoolData = localData[s.school_name];
+                const isV = schoolData && schoolData._verified;
+                const verBadge = isV ? (schoolData._multiSource ? '<span style="background:#52c41a;color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;margin-left:4px;">✓验证</span>' : '<span style="background:#1890ff;color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;margin-left:4px;">📋</span>') : '<span style="background:#faad14;color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;margin-left:4px;">模板</span>';
+                return `<div class="q-card" onclick="getDetail('${s.school_name}')"><div class="q-card-title">🏫 ${s.school_name}${verBadge}</div><div class="q-card-desc"><b>命中问题：</b>${s.q}<br><span style="color:#888;">${s.a}</span></div></div>`;
+            }).join('');
         }
     }
 
@@ -464,19 +494,61 @@
         try {
             // 从本地数据中获取，没有则使用默认模板
             const data = localData[name] || DEFAULT_SCHOOL_DATA;
+            const isVerified = data._verified === true;
+            const isMultiSource = data._multiSource === true;
+            const sources = data._sources || [];
+
+            // 验证状态徽章
+            let badge = '';
+            let badgeColor = '';
+            let badgeText = '';
+            if(isMultiSource) {
+                badge = '✅ 多源交叉验证';
+                badgeColor = '#52c41a';
+                badgeText = '已通过多个来源交叉验证，数据可信度高';
+            } else if(isVerified) {
+                badge = '📋 来源验证';
+                badgeColor = '#1890ff';
+                badgeText = '数据来自权威来源，已核实';
+            } else {
+                badge = '⚠️ 模板参考数据';
+                badgeColor = '#faad14';
+                badgeText = '此数据为模板生成，仅供参考，请加微信获取真实数据';
+            }
 
             let h = `<h3 style="color:#007bff;border-left:5px solid #007bff;padding-left:10px;display:flex;align-items:center;justify-content:space-between;">
                         <span>${name}</span>
                      </h3>`;
+
+            // 数据来源信息条
+            h += `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;margin-bottom:12px;background:${isVerified ? '#f6ffed' : '#fffbe6'};border:1px solid ${isVerified ? '#b7eb8f' : '#ffe58f'};">
+                    <span style="background:${badgeColor};color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;white-space:nowrap;">${badge}</span>
+                    <span style="font-size:12px;color:#666;">${badgeText}</span>
+                  </div>`;
+
+            // 显示数据来源详情（仅验证数据）
+            if(isVerified && sources.length > 0) {
+                h += `<div style="font-size:11px;color:#999;padding:0 14px 8px 14px;">📌 数据来源：${sources.join(' | ')}</div>`;
+            }
+
             if(data.ad) h += `<div class="ad-banner">${data.ad}</div>`;
             h += `<div class="contact-card"><strong>📢 负责人：</strong><br>${data.contact}</div>`;
 
             if(data.qa && data.qa.length > 0) {
                 data.qa.forEach(i => {
-                    h += `<details><summary>Q: ${i.q}</summary><div class="ans-box">${i.a.join('<br>')}</div></details>`;
+                    const qSource = i._source ? `<div style="font-size:10px;color:#999;margin-top:4px;">来源：${i._source}</div>` : '';
+                    h += `<details><summary>Q: ${i.q}</summary><div class="ans-box">${i.a.join('<br>')}${qSource}</div></details>`;
                 });
             } else {
                 h += '<p style="color:#999;font-size:14px;padding:15px;">该校暂无数据</p>';
+            }
+
+            // 未验证数据的提醒
+            if(!isVerified) {
+                h += `<div style="background:#fff7e6;border:1px solid #ffd591;border-radius:10px;padding:14px;margin-top:16px;font-size:13px;">
+                        <strong style="color:#d46b08;">⚠️ 数据说明</strong><br>
+                        <span style="color:#8c6e00;">以上数据为智能模板生成，仅供快速参考。如需获取该校真实在校生的第一手反馈，请添加微信：<strong>junze01agent</strong> 获取核实后的数据。</span>
+                      </div>`;
             }
 
             if(data.user_replies && data.user_replies.length > 0) {

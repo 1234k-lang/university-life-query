@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>全国大学真实生活环境查询</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f4f7f9; margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 500px; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); min-height: 90vh; position: relative; padding-bottom: 80px; }
+        .notice-bar { background: #e6f7ff; border: 1px solid #91d5ff; padding: 12px; border-radius: 8px; font-size: 13px; color: #0050b3; margin-bottom: 15px; }
+        .search-mode-tabs { display: flex; background: #f0f0f0; border-radius: 12px; margin-bottom: 15px; overflow: hidden; }
+        .s-tab { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; color: #666; cursor: pointer; transition: 0.3s; }
+        .s-tab.active { background: #007bff; color: #fff; }
+        .s-tab-q.active { background: #ff4d4f; color: #fff; }
+        input[type="text"] { width: 100%; padding: 15px; border: 2px solid #007bff; border-radius: 12px; font-size: 16px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
+        input[type="text"]:focus { border-color: #0056b3; }
+        .hot-title { font-weight: bold; color: #ff4d4f; font-size: 15px; margin: 25px 0 10px; }
+        .tag { padding: 6px 12px; background: #f5f5f5; border-radius: 20px; font-size: 13px; margin: 5px; display: inline-flex; align-items: center; border: 1px solid #eee; }
+        .tag-name { cursor: pointer; margin-right: 8px; }
+        .tag-pk-btn { cursor: pointer; font-size: 12px; padding: 2px 8px; border-radius: 12px; background: #fff; border: 1px solid #722ed1; color: #722ed1; font-weight: bold; }
+        .tag-pk-btn.in-pk { background: #ff4d4f; border-color: #ff4d4f; color: #fff; }
+        .q-card { background: #fff; border: 1px solid #ffccc7; border-left: 4px solid #ff4d4f; padding: 12px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; }
+        .q-card-title { font-weight: bold; color: #007bff; font-size: 14px; margin-bottom: 5px; }
+        .q-card-desc { font-size: 12px; color: #666; line-height: 1.5; }
+        .ad-banner { background: #fff1f0; border: 1px solid #ffa39e; padding: 15px; border-radius: 10px; margin: 15px 0; text-align: center; }
+        .contact-card { background: #fff7e6; border: 1px solid #ffd591; padding: 15px; border-radius: 10px; color: #d46b08; font-size: 14px; margin-bottom: 15px; }
+        details { background: #fafafa; margin-bottom: 10px; border-radius: 8px; border: 1px solid #eee; }
+        summary { font-weight: bold; padding: 15px; cursor: pointer; outline: none; }
+        .ans-box { padding: 15px; font-size: 14px; color: #555; border-top: 1px solid #eee; }
+        .share-btn { background: #28a745; color: #fff; border: none; padding: 8px 15px; border-radius: 6px; font-size: 13px; float: right; cursor: pointer; font-weight: bold; }
+        .pk-floating-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #722ed1; color: #fff; padding: 15px; border-radius: 15px; box-shadow: 0 4px 20px rgba(114,46,209,0.4); z-index: 999; display: none; flex-direction: column; width: 85%; max-width: 400px; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { bottom: -50px; opacity: 0; } to { bottom: 20px; opacity: 1; } }
+        .compare-card { background: #fafafa; border: 1px solid #eee; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .compare-q { font-weight: bold; color: #722ed1; border-bottom: 1px dashed #eee; padding-bottom: 8px; margin-bottom: 12px; font-size: 14px; }
+        .compare-grid { display: flex; gap: 12px; }
+        .compare-col { flex: 1; font-size: 13px; color: #444; line-height: 1.6; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #f0f0f0; }
+        .compare-school-title { font-size: 11px; color: #999; margin-bottom: 4px; font-weight: bold; border-left: 2px solid #722ed1; padding-left: 4px; }
+        /* ===== IP安全扫描启动画面 ===== */
+        .security-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f4e 40%, #0d1137 100%);
+            z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .security-overlay.fade-out { opacity: 0; transform: scale(1.05); pointer-events: none; }
+        .sec-shield {
+            width: 90px; height: 90px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle, rgba(0,200,150,0.15) 0%, transparent 70%);
+            border: 2px solid rgba(0,200,150,0.4); margin-bottom: 25px; position: relative;
+            animation: shieldPulse 2s infinite;
+        }
+        @keyframes shieldPulse {
+            0%,100% { box-shadow: 0 0 20px rgba(0,200,150,0.2); }
+            50% { box-shadow: 0 0 40px rgba(0,200,150,0.5), 0 0 80px rgba(0,200,150,0.2); }
+        }
+        .sec-shield svg { width: 45px; height: 45px; }
+        .sec-shield-ring {
+            position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px;
+            border: 2px solid transparent; border-top: 2px solid #00c896; border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .sec-title { color: #00c896; font-size: 20px; font-weight: bold; margin-bottom: 8px; letter-spacing: 3px; }
+        .sec-subtitle { color: rgba(255,255,255,0.5); font-size: 12px; margin-bottom: 30px; letter-spacing: 1px; }
+        .sec-ip-box {
+            background: rgba(0,200,150,0.08); border: 1px solid rgba(0,200,150,0.2);
+            border-radius: 10px; padding: 12px 24px; margin-bottom: 25px; text-align: center;
+        }
+        .sec-ip-label { color: rgba(255,255,255,0.4); font-size: 11px; margin-bottom: 4px; }
+        .sec-ip-value { color: #00c896; font-size: 18px; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px; }
+        .sec-progress-bar {
+            width: 75%; max-width: 300px; height: 4px; background: rgba(255,255,255,0.1);
+            border-radius: 4px; overflow: hidden; margin-bottom: 15px;
+        }
+        .sec-progress-fill {
+            height: 100%; width: 0%; border-radius: 4px; transition: width 0.3s;
+            background: linear-gradient(90deg, #00c896, #00e6ac);
+            box-shadow: 0 0 10px rgba(0,200,150,0.5);
+        }
+        .sec-percent { color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 25px; font-family: 'Courier New', monospace; }
+        .sec-check-list { list-style: none; padding: 0; width: 75%; max-width: 300px; }
+        .sec-check-item {
+            color: rgba(255,255,255,0.3); font-size: 12px; padding: 6px 0; display: flex; align-items: center; gap: 8px;
+            transition: color 0.3s;
+        }
+        .sec-check-item.active { color: rgba(255,255,255,0.7); }
+        .sec-check-item.done { color: #00c896; }
+        .sec-check-icon { width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
+        .sec-check-item.done .sec-check-icon::after { content: '\2713'; }
+        .sec-check-item.active .sec-check-icon::after { content: '\25CE'; animation: scanPulse 1s infinite; }
+        .sec-check-item:not(.done):not(.active) .sec-check-icon::after { content: '\25CB'; }
+        .sec-status { color: rgba(255,255,255,0.5); font-size: 11px; margin-top: 25px; font-family: 'Courier New', monospace; }
+        /* 扫描线效果 */
+        .sec-scanline {
+            position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0,200,150,0.6), transparent);
+            animation: scanline 2s linear infinite;
+        }
+        @keyframes scanline { from { top: 0; } to { top: 100%; } }
+        @keyframes scanPulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+<!-- IP安全扫描启动画面 -->
+<div class="security-overlay" id="securityOverlay">
+    <div class="sec-scanline"></div>
+    <div class="sec-shield">
+        <div class="sec-shield-ring"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#00c896" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4" stroke="#00c896"/>
+        </svg>
+    </div>
+    <div class="sec-title">安全验证</div>
+    <div class="sec-subtitle">SECURITY VERIFICATION SYSTEM</div>
+    <div class="sec-ip-box">
+        <div class="sec-ip-label">检测到访问IP</div>
+        <div class="sec-ip-value" id="secIP">-- . -- . -- . --</div>
+    </div>
+    <div class="sec-progress-bar">
+        <div class="sec-progress-fill" id="secProgress"></div>
+    </div>
+    <div class="sec-percent" id="secPercent">0%</div>
+    <ul class="sec-check-list" id="secCheckList">
+        <li class="sec-check-item" data-step="0"><span class="sec-check-icon"></span>IP地址风险检测</li>
+        <li class="sec-check-item" data-step="1"><span class="sec-check-icon"></span>设备指纹识别</li>
+        <li class="sec-check-item" data-step="2"><span class="sec-check-icon"></span>DDoS防护校验</li>
+        <li class="sec-check-item" data-step="3"><span class="sec-check-icon"></span>数据加密通道建立</li>
+        <li class="sec-check-item" data-step="4"><span class="sec-check-icon"></span>安全证书验证</li>
+        <li class="sec-check-item" data-step="5"><span class="sec-check-icon"></span>访问权限授权</li>
+    </ul>
+    <div class="sec-status" id="secStatus">INITIALIZING SECURITY MODULE...</div>
+</div>
+<div class="container" id="mainContainer" style="display:none;">
+    <div id="home-view">
+        <div class="notice-bar" id="notice">欢迎使用本站高校查询系统！还可领取一分一段表+全国大学宿舍详情表，本链接或许会失效，可转发到朋友圈，发给好友保存</div>
+        <h2 style="text-align:center;">🏫 全国大学真实生活环境查询</h2>
+        <div class="search-mode-tabs">
+            <div id="tab-school" class="s-tab active" onclick="switchSearchMode('school')">🏫 搜大学</div>
+            <div id="tab-q" class="s-tab s-tab-q" onclick="switchSearchMode('q')">💡 搜条件 (如: 空调)</div>
+        </div>
+        <input type="text" id="kw" placeholder="输入学校名称快速匹配..." oninput="doSearch()">
+        <div id="search-tags" style="margin-top:15px;"></div>
+        <div id="hot-area">
+            <div class="hot-title">🔥 实时热搜高校</div>
+            <div id="hot-tags"></div>
+        </div>
+    </div>
+    <div id="detail-view" style="display:none;">
+        <button onclick="goHome()" style="border:none;background:none;color:#007bff;font-size:14px;padding:0;margin-bottom:15px;cursor:pointer;">← 返回首页</button>
+        <button id="pk-toggle-btn" class="share-btn" style="background:#722ed1; margin-left:8px;" onclick="togglePk(currentSchool, event)">⚖️ 加入对比</button>
+        <button class="share-btn" onclick="copyShareLink()">复制分享链接</button>
+        <div id="res"></div>
+    </div>
+    <div id="compare-view" style="display:none;">
+        <button onclick="goHome()" style="border:none;background:none;color:#007bff;font-size:14px;padding:0;margin-bottom:15px;cursor:pointer;">← 返回</button>
+        <div id="compare-res"></div>
+    </div>
+    <div style="text-align:center; margin-top:40px; font-size:12px; color:#aaa; border-top:1px dashed #eee; padding-top:20px;">
+        <p>💡 全国高校真实生活情报站</p>
+    </div>
+</div>
+<div id="pk-bar" class="pk-floating-bar">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span style="font-weight:bold; font-size:15px;">⚖️ 高校大PK (<span id="pk-count">0</span>/2)</span>
+        <button onclick="startComparison()" style="background:#fff; color:#722ed1; border:none; padding:6px 16px; border-radius:15px; font-weight:bold; font-size:13px; cursor:pointer;">开始对比</button>
+    </div>
+    <div id="pk-selected-list" style="display:flex; gap:10px; flex-wrap:wrap; width:100%;"></div>
+</div>
+<script>
+    // ===== 全局变量 =====
+    let localData = {};       // {schoolName: schoolData} 从 data.json 加载
+    let allSchools = [];      // [schoolName1, schoolName2, ...] 从 schools.json 加载
+    let currentSchool = '';
+    let searchTimer = null;
+    let compareList = [];
+    let hotDataCache = [];    // 硬编码的热门学校
+    let searchDataCache = [];
+    let searchMode = 'school';
+
+    // 硬编码的热门学校数据 (前10所)
+    const HOT_SCHOOLS = [
+        { school_name: "烟台大学", views: "1564" },
+        { school_name: "厦门华天涉外学院", views: "623" },
+        { school_name: "烟台理工学院", views: "226" },
+        { school_name: "四川传媒学院", views: "185" },
+        { school_name: "新昌技师学院", views: "157" },
+        { school_name: "宝鸡文理学院", views: "150" },
+        { school_name: "潍坊科技学院", views: "150" },
+        { school_name: "信阳师范大学学院", views: "150" },
+        { school_name: "硅湖职业技术学院", views: "150" },
+        { school_name: "江苏省徐州财经高等职业技术学校", views: "150" }
+    ];
+
+    // 没有数据时的通用模板
+    const DEFAULT_SCHOOL_DATA = {
+        qa: [
+            {q: "宿舍是上床下桌吗？", a: ["暂无同学反馈，请联系管理员补充"]},
+            {q: "教室和宿舍有没有空调？", a: ["暂无同学反馈，请联系管理员补充"]},
+            {q: "有独立卫浴吗？", a: ["暂无同学反馈，请联系管理员补充"]},
+            {q: "食堂价格贵吗？", a: ["暂无同学反馈，请联系管理员补充"]},
+            {q: "学校交通便利吗？", a: ["暂无同学反馈，请联系管理员补充"]},
+            {q: "宿舍楼有洗衣机吗？", a: ["暂无同学反馈，请联系管理员补充"]},
+            {q: "每天断电断网吗？", a: ["暂无同学反馈，请联系管理员补充"]},
+            {q: "校园网怎么样？", a: ["暂无同学反馈，请联系管理员补充"]},
+            {q: "宿舍限电情况？", a: ["暂无同学反馈，请联系管理员补充"]},
+            {q: "大一能带电脑吗？", a: ["暂无同学反馈，请联系管理员补充"]},
+            {q: "现阶段学校的门禁情况？", a: ["暂无同学反馈，请联系管理员补充"]},
+            {q: "宿舍晚上查寝吗？", a: ["暂无同学反馈，请联系管理员补充"]}
+        ],
+        contact: "微信：junze01agent",
+        ad: "📢 该校数据正在收集中！如果你是该校同学，欢迎加微信：junze01agent 补充真实信息",
+        user_replies: []
+    };
+
+    // ===== IP安全扫描动画 =====
+    function runSecurityScan() {
+        return new Promise((resolve) => {
+            const overlay = document.getElementById('securityOverlay');
+            const progressFill = document.getElementById('secProgress');
+            const percentEl = document.getElementById('secPercent');
+            const ipEl = document.getElementById('secIP');
+            const statusEl = document.getElementById('secStatus');
+            const items = document.querySelectorAll('.sec-check-item');
+            const totalDuration = 5000;
+            const tickInterval = 50;
+            const stepCount = items.length;
+            const stepDuration = totalDuration / stepCount;
+
+            // 生成随机IP地址
+            const fakeIP = `${Math.floor(Math.random()*100+100)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+
+            // 快速闪烁IP（模拟检测过程）
+            let ipFlickerCount = 0;
+            const ipFlicker = setInterval(() => {
+                ipEl.textContent = `${Math.floor(Math.random()*999)}.${Math.floor(Math.random()*999)}.${Math.floor(Math.random()*999)}.${Math.floor(Math.random()*999)}`;
+                ipFlickerCount++;
+                if(ipFlickerCount > 8) { clearInterval(ipFlicker); ipEl.textContent = fakeIP; }
+            }, 80);
+
+            const statusMessages = [
+                'SCANNING IP REPUTATION DATABASE...',
+                'ANALYZING DEVICE FINGERPRINT...',
+                'CHECKING ANTI-DDOS PROTOCOL...',
+                'ESTABLISHING ENCRYPTED TUNNEL...',
+                'VERIFYING SSL CERTIFICATE...',
+                'GRANTING ACCESS PERMISSION...'
+            ];
+
+            let currentStep = 0;
+            const startTime = Date.now();
+
+            const timer = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / totalDuration * 100, 100);
+                progressFill.style.width = progress + '%';
+                percentEl.textContent = Math.floor(progress) + '%';
+
+                const newStep = Math.min(Math.floor(elapsed / stepDuration), stepCount - 1);
+                if (newStep > currentStep) {
+                    for (let i = currentStep; i < newStep; i++) {
+                        items[i].classList.remove('active');
+                        items[i].classList.add('done');
+                    }
+                    currentStep = newStep;
+                }
+                items[currentStep].classList.add('active');
+                statusEl.textContent = statusMessages[currentStep] || 'FINALIZING...';
+
+                if (elapsed >= totalDuration) {
+                    clearInterval(timer);
+                    items.forEach(i => { i.classList.remove('active'); i.classList.add('done'); });
+                    progressFill.style.width = '100%';
+                    percentEl.textContent = '100%';
+                    statusEl.textContent = 'ACCESS GRANTED \u2713';
+                    statusEl.style.color = '#00c896';
+                    setTimeout(() => {
+                        overlay.classList.add('fade-out');
+                        document.getElementById('mainContainer').style.display = '';
+                        setTimeout(() => { overlay.style.display = 'none'; resolve(); }, 800);
+                    }, 400);
+                }
+            }, tickInterval);
+        });
+    }
+
+    // ===== 页面加载 =====
+    window.onload = async () => {
+        // 先运行安全扫描动画
+        await runSecurityScan();
+
+        // 扫描完成后加载本地JSON数据
+        try {
+            const [dataRes, schoolsRes] = await Promise.all([
+                fetch('data.json').then(r => r.json()),
+                fetch('schools.json').then(r => r.json())
+            ]);
+            localData = dataRes;
+            allSchools = schoolsRes;
+        } catch(e) {
+            console.error('加载数据文件失败:', e);
+            document.getElementById('hot-tags').innerHTML = '<span style="color:red;font-size:12px;">数据加载失败，请刷新重试</span>';
+            return;
+        }
+
+        // 使用硬编码的热门学校数据
+        hotDataCache = HOT_SCHOOLS;
+        renderHotTags();
+
+        // 检查URL参数是否有指定学校
+        const s = new URLSearchParams(window.location.search).get('s');
+        if(s) getDetail(s);
+    };
+
+    // ===== 搜索模式切换 =====
+    function switchSearchMode(mode) {
+        searchMode = mode;
+        const kwInput = document.getElementById('kw');
+        if(mode === 'school') {
+            document.getElementById('tab-school').classList.add('active');
+            document.getElementById('tab-q').classList.remove('active');
+            kwInput.style.borderColor = '#007bff';
+            kwInput.placeholder = "输入学校名称快速匹配...";
+            document.getElementById('hot-area').style.display = 'block';
+        } else {
+            document.getElementById('tab-school').classList.remove('active');
+            document.getElementById('tab-q').classList.add('active');
+            kwInput.style.borderColor = '#ff4d4f';
+            kwInput.placeholder = "输入如: 空调、独卫、门禁...";
+            document.getElementById('hot-area').style.display = 'none';
+        }
+        doSearch();
+    }
+
+    // ===== 返回首页 =====
+    function goHome() {
+        document.getElementById('home-view').style.display='block';
+        document.getElementById('detail-view').style.display='none';
+        document.getElementById('compare-view').style.display='none';
+        window.history.replaceState(null, '', window.location.pathname);
+        renderPkBar();
+    }
+
+    // ===== 搜索功能（完全客户端） =====
+    function doSearch() {
+        const kw = document.getElementById('kw').value.trim();
+        if(!kw) { searchDataCache = []; renderSearchTags(); return; }
+
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            if (searchMode === 'school') {
+                // 从全国高校名单中搜索
+                const matched = allSchools
+                    .filter(name => name.includes(kw))
+                    .slice(0, 30)
+                    .map(name => ({ school_name: name, views: "0" }));
+                searchDataCache = matched;
+            } else {
+                // 按条件搜索：在所有学校数据中查找匹配的QA
+                const results = [];
+                Object.keys(localData).forEach(schoolName => {
+                    const school = localData[schoolName];
+                    if (school && school.qa) {
+                        const matchedQA = school.qa.filter(qa =>
+                            qa.q.includes(kw) || qa.a.some(a => a.includes(kw))
+                        );
+                        if (matchedQA.length > 0) {
+                            results.push({
+                                school_name: schoolName,
+                                q: matchedQA[0].q,
+                                a: matchedQA[0].a[0] || "有相关信息"
+                            });
+                        }
+                    }
+                });
+                if (results.length === 0) {
+                    // 没找到则返回热门学校作为提示
+                    searchDataCache = HOT_SCHOOLS.map(s => ({
+                        school_name: s.school_name,
+                        q: `关于${kw}的问题`,
+                        a: "该校相关信息正在收集中"
+                    }));
+                } else {
+                    searchDataCache = results.slice(0, 30);
+                }
+            }
+            renderSearchTags();
+        }, 300);
+    }
+
+    // ===== 渲染热门标签 =====
+    function renderHotTags() {
+        document.getElementById('hot-tags').innerHTML = hotDataCache.map(s => {
+            const inPk = compareList.includes(s.school_name);
+            return `<div class="tag">
+                        <span class="tag-name" onclick="getDetail('${s.school_name}')">${s.school_name} <small style="color:#ccc">${s.views}</small></span>
+                        <span class="tag-pk-btn ${inPk ? 'in-pk' : ''}" onclick="togglePk('${s.school_name}', event)">${inPk ? '\u2715' : 'VS'}</span>
+                    </div>`;
+        }).join('');
+    }
+
+    // ===== 渲染搜索结果标签 =====
+    function renderSearchTags() {
+        const t = document.getElementById('search-tags');
+        if(!searchDataCache.length) {
+            t.innerHTML = document.getElementById('kw').value ? '<div style="font-size:12px;color:#999;padding:10px;">未找到匹配结果，换个词试试？</div>' : '';
+            return;
+        }
+        if (searchMode === 'school') {
+            t.innerHTML = searchDataCache.map(s => {
+                const inPk = compareList.includes(s.school_name);
+                return `<div class="tag" style="background:#e6f7ff; border-color:#91d5ff;">
+                            <span class="tag-name" style="color:#007bff;" onclick="getDetail('${s.school_name}')">${s.school_name}</span>
+                            <span class="tag-pk-btn ${inPk ? 'in-pk' : ''}" onclick="togglePk('${s.school_name}', event)">${inPk ? '\u2715' : 'VS'}</span>
+                        </div>`;
+            }).join('');
+        } else {
+            t.innerHTML = `<div style="font-size:12px; color:#ff4d4f; margin-bottom:10px; font-weight:bold;">🔍 为您跨库检索到以下高校情况：</div>` +
+            searchDataCache.map(s => `<div class="q-card" onclick="getDetail('${s.school_name}')"><div class="q-card-title">🏫 ${s.school_name}</div><div class="q-card-desc"><b>命中问题：</b>${s.q}<br><span style="color:#888;">${s.a}</span></div></div>`).join('');
+        }
+    }
+
+    // ===== 对比功能 =====
+    function togglePk(name, event) {
+        if(event) event.stopPropagation();
+        const idx = compareList.indexOf(name);
+        if(idx > -1) compareList.splice(idx, 1);
+        else {
+            if(compareList.length >= 2) return alert('⚠️ 最多同时对比 2 所高校！');
+            compareList.push(name);
+        }
+        renderHotTags();
+        renderSearchTags();
+        renderPkBar();
+        const btn = document.getElementById('pk-toggle-btn');
+        if(btn && document.getElementById('detail-view').style.display === 'block') {
+            btn.innerText = compareList.includes(currentSchool) ? '❌ 取消对比' : '⚖️ 加入对比';
+            btn.style.background = compareList.includes(currentSchool) ? '#ff4d4f' : '#722ed1';
+        }
+    }
+
+    function renderPkBar() {
+        const bar = document.getElementById('pk-bar');
+        document.getElementById('pk-count').innerText = compareList.length;
+        let pillsHtml = compareList.map(name => `<div style="background:rgba(255,255,255,0.2); padding:6px 12px; border-radius:8px; font-size:13px; display:flex; align-items:center; gap:6px;">${name} <span onclick="togglePk('${name}', event)" style="cursor:pointer; background:#fff; color:#722ed1; border-radius:50%; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; font-size:10px;">\u2715</span></div>`).join('');
+        document.getElementById('pk-selected-list').innerHTML = pillsHtml || '<span style="font-size:12px; opacity:0.8;">点击学校旁的 VS 加入对比队列</span>';
+        bar.style.display = (compareList.length > 0 && document.getElementById('compare-view').style.display !== 'block') ? 'flex' : 'none';
+    }
+
+    // ===== 获取学校详情（本地数据） =====
+    function getDetail(name) {
+        currentSchool = name;
+        document.getElementById('home-view').style.display='none';
+        document.getElementById('detail-view').style.display='block';
+        document.getElementById('compare-view').style.display='none';
+        document.getElementById('res').innerHTML = '<p style="text-align:center;color:#999;">载入数据中...</p>';
+        window.history.replaceState(null, '', '?s=' + encodeURIComponent(name));
+
+        const btn = document.getElementById('pk-toggle-btn');
+        btn.innerText = compareList.includes(currentSchool) ? '❌ 取消对比' : '⚖️ 加入对比';
+        btn.style.background = compareList.includes(currentSchool) ? '#ff4d4f' : '#722ed1';
+        renderPkBar();
+
+        try {
+            // 从本地数据中获取，没有则使用默认模板
+            const data = localData[name] || DEFAULT_SCHOOL_DATA;
+
+            let h = `<h3 style="color:#007bff;border-left:5px solid #007bff;padding-left:10px;display:flex;align-items:center;justify-content:space-between;">
+                        <span>${name}</span>
+                     </h3>`;
+            if(data.ad) h += `<div class="ad-banner">${data.ad}</div>`;
+            h += `<div class="contact-card"><strong>📢 负责人：</strong><br>${data.contact}</div>`;
+
+            if(data.qa && data.qa.length > 0) {
+                data.qa.forEach(i => {
+                    h += `<details><summary>Q: ${i.q}</summary><div class="ans-box">${i.a.join('<br>')}</div></details>`;
+                });
+            } else {
+                h += '<p style="color:#999;font-size:14px;padding:15px;">该校暂无数据</p>';
+            }
+
+            if(data.user_replies && data.user_replies.length > 0) {
+                h += `<div style="margin-top:20px;font-weight:bold;">💬 校友补充：</div>`;
+                data.user_replies.forEach(r => h += `<div style="background:#f9f9f9;padding:12px;border-radius:8px;margin-top:10px;font-size:13px;border-left:3px solid #52c41a;">${r.user_content}</div>`);
+            }
+
+            document.getElementById('res').innerHTML = h;
+        } catch(e) {
+            document.getElementById('res').innerHTML = `<p style="color:red; text-align:center;">获取数据失败</p>`;
+        }
+    }
+
+    // ===== 开始对比 =====
+    function startComparison() {
+        if(compareList.length < 2) return alert('⚖️ 孤掌难鸣！请在列表中再选择一所高校进行对比！');
+
+        document.getElementById('home-view').style.display='none';
+        document.getElementById('detail-view').style.display='none';
+        document.getElementById('compare-view').style.display='block';
+        document.getElementById('pk-bar').style.display = 'none';
+        document.getElementById('compare-res').innerHTML = '<p style="text-align:center;color:#999;padding:40px;">正在对齐指标...</p>';
+
+        try {
+            // 从本地数据获取对比数据
+            const results = compareList.map(name => localData[name] || DEFAULT_SCHOOL_DATA);
+
+            let allQuestions = [];
+            results.forEach(res => {
+                if(res.qa) {
+                    res.qa.forEach(item => {
+                        if(!allQuestions.includes(item.q)) allQuestions.push(item.q);
+                    });
+                }
+            });
+
+            let html = `<h3 style="text-align:center;color:#722ed1;margin-bottom:20px;">⚖️ 生活质量横向PK</h3><div style="display:flex; gap:12px; margin-bottom:25px;">`;
+            compareList.forEach((name, i) => {
+                html += `<div style="flex:1; background:#f9f0ff; padding:12px; border-radius:10px; text-align:center; font-weight:bold; border:2px solid #d3adf7; color:#722ed1; font-size:14px; position:relative;"><span style="position:absolute; top:-10px; left:10px; background:#722ed1; color:#fff; font-size:9px; padding:2px 6px; border-radius:10px;">样板 ${i+1}</span>${name}</div>`;
+            });
+            html += `</div>`;
+
+            allQuestions.forEach(q => {
+                html += `<div class="compare-card"><div class="compare-q">❓ ${q}</div><div class="compare-grid">`;
+                results.forEach((res, schoolIdx) => {
+                    const matched = res.qa ? res.qa.find(item => item.q === q) : null;
+                    const ansText = matched ? matched.a.join('<br>') : '<span style="color:#ccc;">暂无该项调查数据</span>';
+                    html += `<div class="compare-col"><div class="compare-school-title">${compareList[schoolIdx]}</div>${ansText}</div>`;
+                });
+                html += `</div></div>`;
+            });
+
+            if(results[0].ad) html += `<div class="ad-banner" style="margin-top:30px;">${results[0].ad}</div>`;
+            document.getElementById('compare-res').innerHTML = html;
+        } catch(e) {
+            document.getElementById('compare-res').innerHTML = '<p style="color:red;text-align:center;">对齐失败，请重试</p>';
+        }
+    }
+
+    // ===== 复制分享链接 =====
+    function copyShareLink() {
+        const url = window.location.href;
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(url).then(() => { alert('✅ 链接复制成功！'); });
+        } else {
+            let textArea = document.createElement("textarea");
+            textArea.value = url;
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try { document.execCommand('copy'); alert('✅ 链接复制成功！'); } catch (err) {}
+            document.body.removeChild(textArea);
+        }
+    }
+</script>
+</body>
+</html>

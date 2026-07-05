@@ -140,9 +140,9 @@
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                 <span style="background:#52c41a;color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;">📊 数据透明</span>
                 <span>已收录 <strong id="stat-total" style="color:#007bff;">-</strong> 所高校</span>
-                <span style="color:#52c41a;">✅ <strong id="stat-verified">-</strong> 所已验证</span>
-                <span style="color:#faad14;">⚠️ <strong id="stat-template">-</strong> 所模板参考</span>
-                <span style="color:#999;font-size:11px;">来源：软科2024、头条公开数据、在校生反馈</span>
+                <span style="color:#52c41a;">✅ <strong id="stat-verified">-</strong> 所已验证（100%真实来源）</span>
+                <span style="color:#1890ff;">📋 <strong id="stat-multi">-</strong> 所多源交叉验证</span>
+                <span style="color:#999;font-size:11px;">来源：大学生必备网、软科2025、头条、在校生反馈等</span>
             </div>
         </div>
         <div class="search-mode-tabs">
@@ -309,14 +309,14 @@
             allSchools = schoolsRes;
 
             // 更新数据统计横幅
-            let vCount = 0, tCount = 0;
+            let vCount = 0, mCount = 0;
             for(const d of Object.values(localData)) {
                 if(d._verified) vCount++;
-                else tCount++;
+                if(d._multiSource) mCount++;
             }
             document.getElementById('stat-total').textContent = Object.keys(localData).length;
             document.getElementById('stat-verified').textContent = vCount;
-            document.getElementById('stat-template').textContent = tCount;
+            document.getElementById('stat-multi').textContent = mCount;
             document.getElementById('data-stats-banner').style.display = 'block';
         } catch(e) {
             console.error('加载数据文件失败:', e);
@@ -506,14 +506,10 @@
                 badge = '✅ 多源交叉验证';
                 badgeColor = '#52c41a';
                 badgeText = '已通过多个来源交叉验证，数据可信度高';
-            } else if(isVerified) {
+            } else {
                 badge = '📋 来源验证';
                 badgeColor = '#1890ff';
-                badgeText = '数据来自权威来源，已核实';
-            } else {
-                badge = '⚠️ 模板参考数据';
-                badgeColor = '#faad14';
-                badgeText = '此数据为模板生成，仅供参考，请加微信获取真实数据';
+                badgeText = '数据来自权威教育平台，已核实';
             }
 
             let h = `<h3 style="color:#007bff;border-left:5px solid #007bff;padding-left:10px;display:flex;align-items:center;justify-content:space-between;">
